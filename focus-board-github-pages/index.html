@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7f9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Focus Board">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="Минималистичная канбан-доска для личных задач. Устанавливается как приложение и работает офлайн.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <title>Focus Board — задачи без шума</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%236b72e8'/%3E%3Cpath d='M19 20h26M19 32h26M19 44h17' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-2: #f0f2f6;
+      --surface-3: #e8ebf1;
+      --text: #20232b;
+      --muted: #777e8d;
+      --muted-2: #9aa1af;
+      --border: #e5e8ee;
+      --border-strong: #d8dde6;
+      --accent: #656de7;
+      --accent-hover: #555ed6;
+      --accent-soft: #eeefff;
+      --red: #df535d;
+      --red-soft: #fff0f0;
+      --yellow: #b98417;
+      --yellow-soft: #fff7df;
+      --green: #258a61;
+      --green-soft: #e8f8ef;
+      --shadow: 0 8px 28px rgba(28, 35, 54, .06);
+      --shadow-card: 0 2px 7px rgba(28, 35, 54, .035);
+      --radius: 16px;
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #15171c;
+      --surface: #1d2027;
+      --surface-2: #252933;
+      --surface-3: #2f3440;
+      --text: #edf0f6;
+      --muted: #a0a7b5;
+      --muted-2: #7d8492;
+      --border: #303540;
+      --border-strong: #414754;
+      --accent: #9399ff;
+      --accent-hover: #a9aeff;
+      --accent-soft: #2a2c48;
+      --red: #ff777f;
+      --red-soft: #3a2429;
+      --yellow: #e8bd5f;
+      --yellow-soft: #39311f;
+      --green: #6fd7a4;
+      --green-soft: #1e392e;
+      --shadow: 0 8px 28px rgba(0, 0, 0, .16);
+      --shadow-card: 0 2px 7px rgba(0, 0, 0, .1);
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--bg);
+      font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      transition: background .2s ease, color .2s ease;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 48%, transparent);
+      outline-offset: 2px;
+    }
+    button:disabled { opacity: .35; cursor: not-allowed; }
+    .app-shell { max-width: 1560px; margin: 0 auto; padding: 28px 28px 36px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:30px; }
+    .brand-wrap { display:flex; align-items:center; gap:12px; min-width:0; }
+    .brand-mark { display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:14px; color:#fff; background:linear-gradient(140deg,#858bff,#5c64db); box-shadow:0 5px 14px rgba(101,109,231,.23); }
+    .brand-mark svg { width:23px; height:23px; }
+    .brand-name { margin:0; font-size:18px; line-height:1.2; font-weight:750; letter-spacing:-.55px; }
+    .brand-subtitle { margin:4px 0 0; color:var(--muted); font-size:12px; }
+    .top-actions { display:flex; align-items:center; gap:9px; }
+    .icon-button, .quiet-button, .primary-button, .move-button, .card-action {
+      border:1px solid var(--border); cursor:pointer; transition:background .15s ease, border-color .15s ease, transform .15s ease;
+    }
+    .icon-button { display:grid; place-items:center; width:42px; height:42px; border-radius:13px; background:var(--surface); }
+    .icon-button:hover, .quiet-button:hover, .card-action:hover { background:var(--surface-2); border-color:var(--border-strong); }
+    .icon-button svg, .quiet-button svg, .primary-button svg, .card-action svg, .move-button svg { width:18px; height:18px; flex:0 0 auto; }
+    .install-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:0 12px; border:1px solid var(--border); border-radius:13px; color:var(--accent); background:var(--surface); font-size:13px; font-weight:750; cursor:pointer; white-space:nowrap; transition:background .15s ease, border-color .15s ease, transform .15s ease; }
+    .install-button:hover { background:var(--accent-soft); border-color:color-mix(in srgb, var(--accent) 40%, var(--border)); }
+    .install-button:active { transform:scale(.97); }
+    .install-button svg { width:17px; height:17px; flex:0 0 auto; }
+    .install-button[hidden] { display:none; }
+    .settings { position:relative; }
+    .settings-menu { position:absolute; z-index:20; top:calc(100% + 9px); right:0; width:min(260px, calc(100vw - 32px)); padding:8px; border:1px solid var(--border); border-radius:15px; background:var(--surface); box-shadow:var(--shadow); }
+    .menu-label { padding:8px 10px 5px; color:var(--muted); font-size:11px; font-weight:750; letter-spacing:.07em; text-transform:uppercase; }
+    .menu-item { display:flex; align-items:center; gap:10px; width:100%; min-height:42px; padding:9px 10px; text-align:left; border:0; border-radius:9px; color:var(--text); background:transparent; cursor:pointer; }
+    .menu-item:hover { background:var(--surface-2); }
+    .menu-item svg { width:17px; height:17px; color:var(--muted); }
+    .menu-divider { height:1px; margin:5px 3px; background:var(--border); }
+    .intro { margin-bottom:23px; }
+    .eyebrow { margin:0 0 7px; color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    .page-title { margin:0; font-size:clamp(25px,3vw,34px); line-height:1.16; font-weight:760; letter-spacing:-1.25px; }
+    .page-description { margin:8px 0 0; color:var(--muted); font-size:14px; }
+    .quick-add { display:grid; grid-template-columns:minmax(0,1fr) 175px 170px auto; align-items:center; gap:10px; padding:10px; margin-bottom:26px; background:var(--surface); border:1px solid var(--border); border-radius:17px; box-shadow:var(--shadow-card); }
+    .quick-title-wrap { display:flex; align-items:center; gap:10px; min-width:0; padding-left:8px; }
+    .quick-plus { display:grid; place-items:center; flex:0 0 auto; width:30px; height:30px; color:var(--accent); background:var(--accent-soft); border-radius:10px; }
+    .quick-title { width:100%; min-width:0; height:44px; border:0; outline:0; color:var(--text); background:transparent; font-size:16px; }
+    .quick-title::placeholder { color:var(--muted-2); }
+    .field-select, .field-date { width:100%; min-width:0; height:44px; padding:0 11px; color:var(--text); border:1px solid var(--border); border-radius:11px; background:var(--bg); font-size:16px; }
+    .primary-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:0 16px; border-color:var(--accent); border-radius:12px; color:#fff; background:var(--accent); font-weight:700; white-space:nowrap; }
+    .primary-button:hover { background:var(--accent-hover); border-color:var(--accent-hover); }
+    .primary-button:active, .move-button:active, .icon-button:active { transform:scale(.97); }
+    .board-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 13px; }
+    .board-heading { margin:0; font-size:13px; font-weight:750; letter-spacing:-.1px; }
+    .board-meta { color:var(--muted); font-size:12px; }
+    .mobile-tabs { display:none; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; padding:5px; margin-bottom:14px; border:1px solid var(--border); border-radius:14px; background:var(--surface-2); }
+    .tab-button { display:flex; align-items:center; justify-content:center; gap:7px; min-width:0; min-height:42px; padding:7px 5px; color:var(--muted); background:transparent; border:0; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; }
+    .tab-button[aria-selected="true"] { color:var(--text); background:var(--surface); box-shadow:0 1px 4px rgba(0,0,0,.07); }
+    .tab-count { display:inline-grid; place-items:center; min-width:21px; height:21px; padding:0 5px; color:var(--muted); background:var(--surface-2); border-radius:7px; font-size:11px; font-weight:800; }
+    .board { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; align-items:start; }
+    .column { display:flex; flex-direction:column; min-width:0; min-height:350px; padding:13px; border:1px solid var(--border); border-radius:17px; background:color-mix(in srgb, var(--surface-2) 54%, var(--bg)); transition:border-color .18s ease, background .18s ease; }
+    .column.drag-over { border-color:var(--accent); background:var(--accent-soft); }
+    .column-header { display:flex; align-items:center; justify-content:space-between; gap:9px; padding:2px 2px 13px; }
+    .column-title-wrap { display:flex; align-items:center; gap:9px; min-width:0; }
+    .column-dot { width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
+    [data-status="todo"] .column-dot { background:#9ba3b2; }
+    [data-status="doing"] .column-dot { background:#858bff; }
+    [data-status="done"] .column-dot { background:#45b884; }
+    .column-title { margin:0; font-size:13px; font-weight:780; }
+    .column-count { display:grid; place-items:center; min-width:24px; height:23px; padding:0 6px; color:var(--muted); background:var(--surface-3); border-radius:8px; font-size:11px; font-weight:800; }
+    .clear-done { min-height:34px; padding:4px 8px; color:var(--muted); background:transparent; border:1px solid transparent; border-radius:8px; font-size:11px; cursor:pointer; }
+    .clear-done:hover { color:var(--red); border-color:var(--border); background:var(--surface); }
+    .task-list { display:flex; flex-direction:column; gap:10px; min-height:270px; flex:1; }
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; min-height:185px; padding:18px 12px; color:var(--muted); text-align:center; border:1px dashed var(--border-strong); border-radius:13px; }
+    .empty-icon { display:grid; place-items:center; width:39px; height:39px; color:var(--muted-2); border-radius:13px; background:var(--surface); }
+    .empty-icon svg { width:19px; height:19px; }
+    .empty-state strong { color:var(--text); font-size:12px; }
+    .empty-state span { max-width:190px; font-size:11px; }
+    .task-card { position:relative; min-width:0; padding:13px 12px 10px; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:var(--shadow-card); cursor:grab; transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease, opacity .16s ease; }
+    .task-card:hover { border-color:var(--border-strong); box-shadow:var(--shadow); transform:translateY(-1px); }
+    .task-card:active { cursor:grabbing; }
+    .task-card.dragging { opacity:.4; transform:rotate(1deg) scale(.98); }
+    .task-card.completed .task-title { color:var(--muted); text-decoration:line-through; text-decoration-thickness:1.5px; }
+    .task-top { display:flex; align-items:center; justify-content:space-between; gap:9px; margin-bottom:9px; }
+    .priority-badge { display:inline-flex; align-items:center; gap:5px; max-width:calc(100% - 36px); padding:4px 7px; border-radius:7px; font-size:10px; font-weight:800; line-height:1.25; }
+    .priority-badge::before { content:""; width:6px; height:6px; flex:0 0 auto; border-radius:50%; background:currentColor; }
+    .priority-urgent { color:var(--red); background:var(--red-soft); }
+    .priority-important { color:var(--yellow); background:var(--yellow-soft); }
+    .priority-normal { color:var(--green); background:var(--green-soft); }
+    .edit-mini { display:grid; place-items:center; flex:0 0 auto; width:34px; height:34px; margin:-6px -5px -6px 0; color:var(--muted); border:0; border-radius:9px; background:transparent; cursor:pointer; }
+    .edit-mini:hover { color:var(--accent); background:var(--surface-2); }
+    .edit-mini svg { width:16px; height:16px; }
+    .task-title { margin:0; overflow-wrap:anywhere; font-size:14px; line-height:1.48; font-weight:650; white-space:pre-wrap; }
+    .task-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:13px; padding-top:10px; border-top:1px solid var(--border); }
+    .due-label { display:inline-flex; align-items:center; gap:5px; min-width:0; color:var(--muted); font-size:11px; }
+    .due-label svg { width:14px; height:14px; flex:0 0 auto; }
+    .due-label.overdue { color:var(--red); font-weight:800; }
+    .due-label.soon { color:var(--yellow); font-weight:750; }
+    .card-controls { display:flex; align-items:center; justify-content:flex-end; gap:5px; margin-left:auto; }
+    .move-button, .card-action { display:grid; place-items:center; flex:0 0 auto; width:38px; height:38px; padding:0; border-radius:11px; background:var(--surface-2); color:var(--muted); }
+    .move-button { color:var(--text); background:var(--surface-2); }
+    .move-button:hover { color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
+    .card-action { background:transparent; border-color:transparent; }
+    .card-action:hover { color:var(--red); background:var(--red-soft); border-color:transparent; }
+    .move-button svg { width:18px; height:18px; }
+    .bottom-note { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:22px; color:var(--muted-2); font-size:11px; }
+    .privacy-note { display:flex; align-items:center; gap:6px; }
+    .privacy-note svg { width:14px; height:14px; }
+    .toast { position:fixed; z-index:100; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:14px; width:max-content; max-width:calc(100vw - 28px); padding:10px 12px 10px 15px; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:13px; box-shadow:0 12px 40px rgba(0,0,0,.15); transform:translate(-50%, 20px); opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; }
+    .toast.show { opacity:1; pointer-events:auto; transform:translate(-50%,0); }
+    .toast-message { font-size:13px; }
+    .undo-button { min-height:36px; padding:0 10px; color:var(--accent); background:var(--accent-soft); border:0; border-radius:9px; font-size:12px; font-weight:800; cursor:pointer; }
+    .dialog { width:min(500px, calc(100vw - 28px)); max-height:calc(100dvh - 28px); padding:0; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:20px; box-shadow:0 20px 90px rgba(0,0,0,.28); }
+    .dialog::backdrop { background:rgba(17,20,29,.5); backdrop-filter:blur(3px); }
+    .dialog-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px 21px 15px; border-bottom:1px solid var(--border); }
+    .dialog-title { margin:0; font-size:17px; font-weight:780; letter-spacing:-.3px; }
+    .dialog-body { display:grid; gap:15px; padding:19px 21px; }
+    .form-field { display:grid; gap:7px; }
+    .form-label { color:var(--muted); font-size:12px; font-weight:750; }
+    .edit-textarea { width:100%; min-height:110px; resize:vertical; padding:12px; color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:12px; font-size:16px; line-height:1.5; }
+    .dialog-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .dialog-actions { display:flex; justify-content:flex-end; gap:9px; padding:14px 21px 20px; border-top:1px solid var(--border); }
+    .quiet-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:0 14px; border-radius:11px; background:var(--surface); font-weight:700; }
+    .file-input { display:none; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (min-width:761px) { .column { min-height:420px; } }
+    @media (max-width:1000px) {
+      .app-shell { padding:23px 20px 30px; }
+      .quick-add { grid-template-columns:minmax(0,1fr) 155px 155px auto; }
+      .board { gap:11px; }
+      .column { padding:10px; }
+    }
+    @media (max-width:760px) {
+      .app-shell { padding:calc(17px + env(safe-area-inset-top)) 14px calc(25px + env(safe-area-inset-bottom)); }
+      .topbar { margin-bottom:24px; }
+      .brand-mark { width:39px; height:39px; border-radius:13px; }
+      .brand-name { font-size:17px; }
+      .brand-subtitle { font-size:11px; }
+      .top-actions { gap:7px; }
+      .install-button { width:40px; min-height:40px; padding:0; border-radius:12px; }
+      .install-button .install-label { display:none; }
+      .icon-button { width:40px; height:40px; }
+      .intro { margin-bottom:19px; }
+      .page-title { font-size:29px; letter-spacing:-1px; }
+      .page-description { max-width:340px; font-size:13px; }
+      .quick-add { grid-template-columns:minmax(0,1fr) auto; gap:8px; padding:9px; margin-bottom:21px; }
+      .quick-title-wrap { grid-column:1 / -1; padding-left:4px; }
+      .quick-title { height:42px; }
+      .field-select, .field-date { height:42px; }
+      .primary-button { min-height:42px; padding:0 13px; }
+      .primary-button .button-label { display:none; }
+      .primary-button { width:44px; padding:0; }
+      .primary-button svg { width:20px; height:20px; }
+      .board-head { margin-bottom:11px; }
+      .mobile-tabs { display:grid; }
+      .board { grid-template-columns:minmax(0,1fr); gap:10px; }
+      .column { display:none; min-height:calc(100dvh - 390px); padding:11px; }
+      .column.active { display:flex; }
+      .task-list { min-height:220px; }
+      .task-card { padding:13px 12px 10px; }
+      .task-title { font-size:15px; }
+      .move-button, .card-action { width:40px; height:40px; }
+      .bottom-note { align-items:flex-start; flex-direction:column; gap:6px; margin-top:17px; }
+      .board-meta { font-size:11px; }
+    }
+    @media (max-width:380px) {
+      .app-shell { padding-left:10px; padding-right:10px; }
+      .topbar { gap:8px; }
+      .top-actions { gap:5px; }
+      .install-button, .icon-button { width:38px; min-height:38px; height:38px; }
+      .brand-subtitle { display:none; }
+      .page-title { font-size:26px; }
+      .tab-button { gap:5px; font-size:12px; }
+      .tab-count { min-width:19px; height:19px; }
+      .priority-badge { font-size:9px; }
+      .task-card { padding-left:10px; padding-right:9px; }
+      .move-button, .card-action { width:38px; height:40px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-wrap">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 6.5h14M5 12h14M5 17.5h8"/></svg>
+        </div>
+        <div>
+          <p class="brand-name">Focus Board</p>
+          <p class="brand-subtitle">Меньше шума. Больше сделанного.</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="install-button" id="installButton" type="button" aria-label="Установить Focus Board" title="Установить приложение">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M12 7v7m-3-3 3 3 3-3M8 17h8"/></svg>
+          <span class="install-label">Установить</span>
+        </button>
+        <button class="icon-button" id="themeToggle" type="button" aria-label="Переключить тему" title="Переключить тему">
+          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+        </button>
+        <div class="settings">
+          <button class="icon-button" id="settingsToggle" type="button" aria-label="Открыть настройки" title="Настройки" aria-expanded="false" aria-controls="settingsMenu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3 .9v.2a1.8 1.8 0 1 1-3.6 0v-.2a1.8 1.8 0 0 0-3-.9l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-.9-3H3.7a1.8 1.8 0 1 1 0-3.6h.2a1.8 1.8 0 0 0 .9-3l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3-.9v-.2a1.8 1.8 0 1 1 3.6 0v.2a1.8 1.8 0 0 0 3 .9l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 .9 3h.2a1.8 1.8 0 1 1 0 3.6h-.2a1.8 1.8 0 0 0-.9 3Z" transform="translate(0 1) scale(.92)"/></svg>
+          </button>
+          <div class="settings-menu" id="settingsMenu" hidden>
+            <div class="menu-label">Данные и настройки</div>
+            <button class="menu-item" id="exportButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg>Экспорт в JSON</button>
+            <button class="menu-item" id="importButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m-5 5 5-5 5 5M5 17v3h14v-3"/></svg>Импорт из JSON</button>
+            <div class="menu-divider"></div>
+            <button class="menu-item" id="clearDoneMenuButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Очистить выполненные</button>
+          </div>
+        </div>
+        <input class="file-input" id="importFile" type="file" accept=".json,application/json">
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="pageTitle">
+        <p class="eyebrow">ТВОЁ ПРОСТРАНСТВО ДЛЯ ФОКУСА</p>
+        <h1 class="page-title" id="pageTitle">Разложи мысли по полочкам.</h1>
+        <p class="page-description">Добавляй дела, отмечай важное и двигайся вперёд — по одной задаче за раз.</p>
+      </section>
+
+      <form class="quick-add" id="quickAddForm" autocomplete="off">
+        <label class="quick-title-wrap">
+          <span class="quick-plus" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          <span class="sr-only">Новая задача</span>
+          <input class="quick-title" id="newTaskTitle" type="text" maxlength="500" placeholder="Что нужно сделать? Например, оплатить интернет…" aria-label="Новая задача" required>
+        </label>
+        <label>
+          <span class="sr-only">Приоритет задачи</span>
+          <select class="field-select" id="newTaskPriority" aria-label="Приоритет задачи">
+            <option value="urgent">🔴 Срочно / Оплата</option>
+            <option value="important">🟡 Важно / Звонок</option>
+            <option value="normal" selected>🟢 Обычное</option>
+          </select>
+        </label>
+        <label>
+          <span class="sr-only">Дедлайн задачи</span>
+          <input class="field-date" id="newTaskDue" type="date" aria-label="Дедлайн (необязательно)">
+        </label>
+        <button class="primary-button" type="submit" aria-label="Добавить задачу" title="Добавить задачу (Enter)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="button-label">Добавить</span>
+        </button>
+      </form>
+
+      <div class="board-head">
+        <h2 class="board-heading">Моя доска</h2>
+        <div class="board-meta" id="boardSummary" aria-live="polite">0 задач · всё под контролем</div>
+      </div>
+
+      <nav class="mobile-tabs" id="mobileTabs" role="tablist" aria-label="Колонки задач">
+        <button class="tab-button" id="tab-todo" type="button" role="tab" data-tab="todo" aria-selected="true" aria-controls="column-todo">Сделать <span class="tab-count" id="tab-count-todo">0</span></button>
+        <button class="tab-button" id="tab-doing" type="button" role="tab" data-tab="doing" aria-selected="false" aria-controls="column-doing">В работе <span class="tab-count" id="tab-count-doing">0</span></button>
+        <button class="tab-button" id="tab-done" type="button" role="tab" data-tab="done" aria-selected="false" aria-controls="column-done">Готово <span class="tab-count" id="tab-count-done">0</span></button>
+      </nav>
+
+      <section class="board" id="board" aria-label="Канбан-доска">
+        <section class="column active" id="column-todo" data-status="todo" aria-labelledby="heading-todo">
+          <header class="column-header">
+            <div class="column-title-wrap"><span class="column-dot" aria-hidden="true"></span><h3 class="column-title" id="heading-todo">Сделать</h3><span class="column-count" id="count-todo">0</span></div>
+          </header>
+          <div class="task-list" id="list-todo" aria-label="Задачи: сделать"></div>
+        </section>
+        <section class="column" id="column-doing" data-status="doing" aria-labelledby="heading-doing">
+          <header class="column-header">
+            <div class="column-title-wrap"><span class="column-dot" aria-hidden="true"></span><h3 class="column-title" id="heading-doing">В работе</h3><span class="column-count" id="count-doing">0</span></div>
+          </header>
+          <div class="task-list" id="list-doing" aria-label="Задачи: в работе"></div>
+        </section>
+        <section class="column" id="column-done" data-status="done" aria-labelledby="heading-done">
+          <header class="column-header">
+            <div class="column-title-wrap"><span class="column-dot" aria-hidden="true"></span><h3 class="column-title" id="heading-done">Готово</h3><span class="column-count" id="count-done">0</span></div>
+            <button class="clear-done" id="clearDoneButton" type="button" title="Удалить все выполненные задачи">Очистить</button>
+          </header>
+          <div class="task-list" id="list-done" aria-label="Выполненные задачи"></div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="bottom-note">
+      <span class="privacy-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>Задачи хранятся только в этом браузере.</span>
+      <span id="savedStatus">Автосохранение включено</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-message" id="toastMessage">Задача удалена</span><button class="undo-button" id="undoButton" type="button">Отменить</button></div>
+
+  <dialog class="dialog" id="editDialog" aria-labelledby="editDialogTitle">
+    <form id="editTaskForm">
+      <header class="dialog-header">
+        <h2 class="dialog-title" id="editDialogTitle">Редактировать задачу</h2>
+        <button class="icon-button" id="closeEditDialog" type="button" aria-label="Закрыть окно редактирования" style="width:36px;height:36px;border-radius:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <label class="form-field"><span class="form-label">Название задачи</span><textarea class="edit-textarea" id="editTitle" maxlength="500" required></textarea></label>
+        <div class="dialog-grid">
+          <label class="form-field"><span class="form-label">Приоритет</span><select class="field-select" id="editPriority"><option value="urgent">🔴 Срочно / Оплата</option><option value="important">🟡 Важно / Звонок</option><option value="normal">🟢 Обычное</option></select></label>
+          <label class="form-field"><span class="form-label">Дедлайн</span><input class="field-date" id="editDue" type="date"></label>
+        </div>
+        <label class="form-field"><span class="form-label">Колонка</span><select class="field-select" id="editStatus"><option value="todo">Сделать</option><option value="doing">В работе</option><option value="done">Готово</option></select></label>
+      </div>
+      <footer class="dialog-actions"><button class="quiet-button" id="cancelEdit" type="button">Отмена</button><button class="primary-button" type="submit">Сохранить</button></footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="installDialog" aria-labelledby="installDialogTitle">
+    <header class="dialog-header">
+      <h2 class="dialog-title" id="installDialogTitle">Установить Focus Board</h2>
+      <button class="icon-button" id="closeInstallDialog" type="button" aria-label="Закрыть инструкции по установке" style="width:36px;height:36px;border-radius:10px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+    <div class="dialog-body" id="installInstructions">
+      <p style="margin:0;color:var(--muted);font-size:14px;line-height:1.6">Установка добавит отдельную иконку на устройство. После первого запуска приложение сможет открываться без интернета.</p>
+      <div class="form-field"><span class="form-label">На компьютере (Chrome или Edge)</span><p style="margin:0;font-size:14px">Нажми значок установки в адресной строке браузера или открой меню браузера и выбери «Установить Focus Board».</p></div>
+      <div class="form-field"><span class="form-label">На Android</span><p style="margin:0;font-size:14px">Открой сайт в Chrome, нажми ⋮ и выбери «Установить приложение» или «Добавить на главный экран».</p></div>
+      <div class="form-field"><span class="form-label">На iPhone</span><p style="margin:0;font-size:14px">Открой сайт в Safari, нажми «Поделиться» → «На экран Домой» → «Добавить».</p></div>
+    </div>
+    <footer class="dialog-actions"><button class="primary-button" id="closeInstallDialogButton" type="button">Понятно</button></footer>
+  </dialog>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const STORAGE_KEY = 'focus-board.tasks.v1';
+      const THEME_KEY = 'focus-board.theme.v1';
+      const STATUSES = ['todo', 'doing', 'done'];
+      const STATUS_LABELS = { todo: 'Сделать', doing: 'В работе', done: 'Готово' };
+      const PRIORITIES = {
+        urgent: { label: 'Срочно / Оплата', css: 'priority-urgent' },
+        important: { label: 'Важно / Звонок', css: 'priority-important' },
+        normal: { label: 'Обычное', css: 'priority-normal' }
+      };
+      const ICONS = {
+        edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>',
+        left: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg>',
+        right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>',
+        trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+        calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>',
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>',
+        inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l2 11v4H2v-4L4 4Z"/><path d="M2 14h6l2 3h4l2-3h6"/></svg>'
+      };
+
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+      const elements = {
+        quickForm: $('#quickAddForm'), newTitle: $('#newTaskTitle'), newPriority: $('#newTaskPriority'), newDue: $('#newTaskDue'),
+        board: $('#board'), summary: $('#boardSummary'), savedStatus: $('#savedStatus'), themeToggle: $('#themeToggle'), themeIcon: $('#themeIcon'),
+        installButton: $('#installButton'), installDialog: $('#installDialog'), closeInstallDialog: $('#closeInstallDialog'), closeInstallDialogButton: $('#closeInstallDialogButton'),
+        settingsToggle: $('#settingsToggle'), settingsMenu: $('#settingsMenu'), exportButton: $('#exportButton'), importButton: $('#importButton'), importFile: $('#importFile'),
+        clearDoneButton: $('#clearDoneButton'), clearDoneMenuButton: $('#clearDoneMenuButton'), toast: $('#toast'), toastMessage: $('#toastMessage'), undoButton: $('#undoButton'),
+        editDialog: $('#editDialog'), editForm: $('#editTaskForm'), editTitle: $('#editTitle'), editPriority: $('#editPriority'), editDue: $('#editDue'), editStatus: $('#editStatus'),
+        closeEditDialog: $('#closeEditDialog'), cancelEdit: $('#cancelEdit')
+      };
+
+      let tasks = loadTasks();
+      let activeMobileTab = 'todo';
+      let editingTaskId = null;
+      let pendingDelete = null;
+      let toastTimer = null;
+      let draggedTaskId = null;
+      let savedStatusTimer = null;
+      let deferredInstallPrompt = null;
+
+      function makeId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+        return 'task-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+      }
+
+      function normalizeTask(item) {
+        if (!item || typeof item !== 'object') return null;
+        const title = typeof item.title === 'string' ? item.title.trim().slice(0, 500) : '';
+        if (!title) return null;
+        const status = STATUSES.includes(item.status) ? item.status : 'todo';
+        const priority = Object.prototype.hasOwnProperty.call(PRIORITIES, item.priority) ? item.priority : 'normal';
+        const due = typeof item.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.due) ? item.due : '';
+        return {
+          id: typeof item.id === 'string' && item.id ? item.id : makeId(),
+          title,
+          status,
+          priority,
+          due,
+          createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now(),
+          updatedAt: Number.isFinite(item.updatedAt) ? item.updatedAt : Date.now()
+        };
+      }
+
+      function loadTasks() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          const data = Array.isArray(parsed) ? parsed : parsed && Array.isArray(parsed.tasks) ? parsed.tasks : [];
+          return data.map(normalizeTask).filter(Boolean);
+        } catch (error) {
+          console.warn('Не удалось прочитать сохранённые задачи:', error);
+          return [];
+        }
+      }
+
+      function saveTasks() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+          elements.savedStatus.textContent = 'Сохранено автоматически';
+          clearTimeout(savedStatusTimer);
+          savedStatusTimer = setTimeout(() => { elements.savedStatus.textContent = 'Автосохранение включено'; }, 1800);
+        } catch (error) {
+          elements.savedStatus.textContent = 'Не удалось сохранить данные';
+          showToast('Хранилище браузера недоступно');
+          console.error('Не удалось сохранить задачи:', error);
+        }
+      }
+
+      function dateFromLocalString(dateString) {
+        if (!dateString) return null;
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      function dateOnly(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      function formatDate(dateString) {
+        const date = dateFromLocalString(dateString);
+        if (!date) return '';
+        return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(date).replace('.', '');
+      }
+
+      function getDueState(task) {
+        if (!task.due || task.status === 'done') return { text: '', className: '' };
+        const today = dateOnly(new Date());
+        const dueDate = dateFromLocalString(task.due);
+        const todayDate = dateFromLocalString(today);
+        const daysLeft = Math.round((dueDate - todayDate) / 86400000);
+        if (daysLeft < 0) return { text: `Просрочено · ${formatDate(task.due)}`, className: 'overdue' };
+        if (daysLeft === 0) return { text: 'Сегодня', className: 'overdue' };
+        if (daysLeft <= 2) return { text: `Скоро · ${formatDate(task.due)}`, className: 'soon' };
+        return { text: formatDate(task.due), className: '' };
+      }
+
+      function escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+      }
+
+      function taskCardHTML(task) {
+        const priority = PRIORITIES[task.priority] || PRIORITIES.normal;
+        const due = getDueState(task);
+        const statusIndex = STATUSES.indexOf(task.status);
+        const canMoveLeft = statusIndex > 0;
+        const canMoveRight = statusIndex < STATUSES.length - 1;
+        const completedClass = task.status === 'done' ? ' completed' : '';
+        const dueHTML = task.due
+          ? `<span class="due-label ${due.className}" title="Дедлайн: ${escapeHTML(task.due)}">${ICONS.calendar}<span>${escapeHTML(due.text || formatDate(task.due))}</span></span>`
+          : '<span class="due-label" aria-label="Без дедлайна"></span>';
+        return `<article class="task-card${completedClass}" data-task-id="${escapeHTML(task.id)}" draggable="true" tabindex="0" aria-label="${escapeHTML(task.title)}. ${STATUS_LABELS[task.status]}. Дважды щёлкните для редактирования.">
+          <div class="task-top"><span class="priority-badge ${priority.css}">${escapeHTML(priority.label)}</span><button class="edit-mini" type="button" data-action="edit" aria-label="Редактировать задачу" title="Редактировать">${ICONS.edit}</button></div>
+          <p class="task-title">${escapeHTML(task.title)}</p>
+          <div class="task-footer">${dueHTML}<div class="card-controls">
+            <button class="move-button" type="button" data-action="move-left" ${canMoveLeft ? '' : 'disabled'} aria-label="Переместить в колонку «${canMoveLeft ? STATUS_LABELS[STATUSES[statusIndex - 1]] : 'предыдущая колонка'}»" title="Назад">${ICONS.left}</button>
+            <button class="move-button" type="button" data-action="move-right" ${canMoveRight ? '' : 'disabled'} aria-label="Переместить в колонку «${canMoveRight ? STATUS_LABELS[STATUSES[statusIndex + 1]] : 'следующая колонка'}»" title="Вперёд">${ICONS.right}</button>
+            <button class="card-action" type="button" data-action="delete" aria-label="Удалить задачу" title="Удалить">${ICONS.trash}</button>
+          </div></div>
+        </article>`;
+      }
+
+      function emptyState(status) {
+        const copy = {
+          todo: ['Пока всё чисто', 'Добавь задачу выше — и она появится здесь.'],
+          doing: ['Здесь будет прогресс', 'Перемести сюда задачу, над которой работаешь.'],
+          done: ['Всё впереди', 'Выполненные задачи будут собираться здесь.']
+        }[status];
+        return `<div class="empty-state"><div class="empty-icon">${ICONS[status === 'done' ? 'check' : 'inbox']}</div><strong>${copy[0]}</strong><span>${copy[1]}</span></div>`;
+      }
+
+      function render() {
+        for (const status of STATUSES) {
+          const statusTasks = tasks.filter(task => task.status === status);
+          const list = $(`#list-${status}`);
+          list.innerHTML = statusTasks.length ? statusTasks.map(taskCardHTML).join('') : emptyState(status);
+          $(`#count-${status}`).textContent = statusTasks.length;
+          $(`#tab-count-${status}`).textContent = statusTasks.length;
+          const column = $(`#column-${status}`);
+          column.classList.toggle('active', status === activeMobileTab);
+          const tab = $(`#tab-${status}`);
+          tab.setAttribute('aria-selected', String(status === activeMobileTab));
+          tab.tabIndex = status === activeMobileTab ? 0 : -1;
+        }
+        const total = tasks.length;
+        const overdue = tasks.filter(task => getDueState(task).className === 'overdue' && task.status !== 'done').length;
+        let summary = `${total} ${pluralTasks(total)}`;
+        summary += overdue ? ` · просрочено: ${overdue}` : total === 0 ? ' · всё под контролем' : ' · так держать';
+        elements.summary.textContent = summary;
+      }
+
+      function pluralTasks(number) {
+        const n = Math.abs(number) % 100;
+        const n1 = n % 10;
+        if (n > 10 && n < 20) return 'задач';
+        if (n1 > 1 && n1 < 5) return 'задачи';
+        if (n1 === 1) return 'задача';
+        return 'задач';
+      }
+
+      function commit() {
+        saveTasks();
+        render();
+      }
+
+      function addTask(title, priority, due) {
+        const cleanTitle = title.trim();
+        if (!cleanTitle) return false;
+        tasks.unshift({ id: makeId(), title: cleanTitle.slice(0, 500), status: 'todo', priority: PRIORITIES[priority] ? priority : 'normal', due: due || '', createdAt: Date.now(), updatedAt: Date.now() });
+        activeMobileTab = 'todo';
+        commit();
+        return true;
+      }
+
+      function moveTask(taskId, destination) {
+        const task = tasks.find(item => item.id === taskId);
+        if (!task || !STATUSES.includes(destination) || task.status === destination) return;
+        task.status = destination;
+        task.updatedAt = Date.now();
+        commit();
+        if (window.matchMedia('(max-width: 760px)').matches) activeMobileTab = destination;
+        render();
+        showToast(`Перемещено: ${STATUS_LABELS[destination]}`, false);
+      }
+
+      function moveRelative(taskId, direction) {
+        const task = tasks.find(item => item.id === taskId);
+        if (!task) return;
+        const nextIndex = STATUSES.indexOf(task.status) + direction;
+        if (nextIndex < 0 || nextIndex >= STATUSES.length) return;
+        moveTask(taskId, STATUSES[nextIndex]);
+      }
+
+      function openEditor(taskId) {
+        const task = tasks.find(item => item.id === taskId);
+        if (!task) return;
+        editingTaskId = taskId;
+        elements.editTitle.value = task.title;
+        elements.editPriority.value = task.priority;
+        elements.editDue.value = task.due || '';
+        elements.editStatus.value = task.status;
+        if (typeof elements.editDialog.showModal === 'function') elements.editDialog.showModal();
+        else window.alert('Редактирование не поддерживается этим браузером. Попробуйте обновить его.');
+        setTimeout(() => elements.editTitle.focus(), 30);
+      }
+
+      function closeEditor() {
+        if (elements.editDialog.open) elements.editDialog.close();
+        editingTaskId = null;
+      }
+
+      function showToast(message, offerUndo = false) {
+        clearTimeout(toastTimer);
+        elements.toastMessage.textContent = message;
+        elements.undoButton.hidden = !offerUndo;
+        elements.toast.classList.add('show');
+        toastTimer = setTimeout(() => {
+          elements.toast.classList.remove('show');
+          if (pendingDelete && pendingDelete.expiresAt <= Date.now()) pendingDelete = null;
+        }, offerUndo ? 5000 : 2600);
+      }
+
+      function deleteTask(taskId) {
+        const index = tasks.findIndex(task => task.id === taskId);
+        if (index < 0) return;
+        // Если предыдущая операция удаления ещё не отменена, считаем её подтверждённой.
+        pendingDelete = { task: tasks[index], index, expiresAt: Date.now() + 5000 };
+        tasks.splice(index, 1);
+        commit();
+        showToast('Задача удалена', true);
+      }
+
+      function undoDelete() {
+        if (!pendingDelete || pendingDelete.expiresAt < Date.now()) {
+          pendingDelete = null;
+          elements.toast.classList.remove('show');
+          return;
+        }
+        const restored = pendingDelete.task;
+        const originalIndex = pendingDelete.index;
+        tasks.splice(Math.max(0, Math.min(originalIndex, tasks.length)), 0, restored);
+        activeMobileTab = restored.status;
+        pendingDelete = null;
+        clearTimeout(toastTimer);
+        elements.toast.classList.remove('show');
+        commit();
+        showToast('Задача восстановлена', false);
+      }
+
+      function clearCompleted() {
+        const completedCount = tasks.filter(task => task.status === 'done').length;
+        if (!completedCount) {
+          showToast('Выполненных задач пока нет', false);
+          elements.settingsMenu.hidden = true;
+          elements.settingsToggle.setAttribute('aria-expanded', 'false');
+          return;
+        }
+        if (!window.confirm(`Удалить все ${completedCount} выполненных ${pluralTasks(completedCount)}? Это действие нельзя отменить.`)) return;
+        tasks = tasks.filter(task => task.status !== 'done');
+        commit();
+        showToast(`Удалено выполненных задач: ${completedCount}`, false);
+        elements.settingsMenu.hidden = true;
+        elements.settingsToggle.setAttribute('aria-expanded', 'false');
+      }
+
+      function exportJSON() {
+        const payload = { app: 'Focus Board', version: 1, exportedAt: new Date().toISOString(), tasks };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `focus-board-${dateOnly(new Date())}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        elements.settingsMenu.hidden = true;
+        elements.settingsToggle.setAttribute('aria-expanded', 'false');
+        showToast('Экспорт подготовлен', false);
+      }
+
+      async function importJSON(file) {
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          const rawTasks = Array.isArray(parsed) ? parsed : parsed && Array.isArray(parsed.tasks) ? parsed.tasks : null;
+          if (!rawTasks) throw new Error('В JSON не найден список задач.');
+          const imported = rawTasks.map(normalizeTask).filter(Boolean);
+          if (rawTasks.length && imported.length === 0) throw new Error('В файле не удалось найти корректные задачи.');
+          if (!window.confirm(`Импортировать ${imported.length} ${pluralTasks(imported.length)}? Текущий список будет заменён.`)) return;
+          tasks = imported;
+          pendingDelete = null;
+          commit();
+          activeMobileTab = 'todo';
+          render();
+          showToast(`Импортировано задач: ${tasks.length}`, false);
+        } catch (error) {
+          window.alert(`Не удалось импортировать файл. ${error.message || 'Проверьте формат JSON.'}`);
+        } finally {
+          elements.importFile.value = '';
+          elements.settingsMenu.hidden = true;
+          elements.settingsToggle.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      function setTheme(theme) {
+        const chosen = theme === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = chosen;
+        document.querySelector('meta[name="theme-color"]').content = chosen === 'dark' ? '#15171c' : '#f6f7f9';
+        try { localStorage.setItem(THEME_KEY, chosen); } catch (_) { /* Тема всё равно применится до перезагрузки. */ }
+        elements.themeToggle.setAttribute('aria-label', chosen === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему');
+        elements.themeToggle.title = chosen === 'dark' ? 'Светлая тема' : 'Тёмная тема';
+        elements.themeIcon.innerHTML = chosen === 'dark'
+          ? '<path d="M20.9 13A8.5 8.5 0 0 1 11 3.1 8.5 8.5 0 1 0 20.9 13Z"/>'
+          : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>';
+      }
+
+      function initializeTheme() {
+        let saved = null;
+        try { saved = localStorage.getItem(THEME_KEY); } catch (_) { /* Используем системную тему. */ }
+        const initial = saved === 'dark' || saved === 'light'
+          ? saved
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        setTheme(initial);
+      }
+
+      elements.quickForm.addEventListener('submit', event => {
+        event.preventDefault();
+        if (addTask(elements.newTitle.value, elements.newPriority.value, elements.newDue.value)) {
+          elements.newTitle.value = '';
+          elements.newDue.value = '';
+          elements.newPriority.value = 'normal';
+          elements.newTitle.focus();
+        } else {
+          elements.newTitle.focus();
+        }
+      });
+
+      elements.board.addEventListener('click', event => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const card = button.closest('[data-task-id]');
+        if (!card) return;
+        const taskId = card.dataset.taskId;
+        switch (button.dataset.action) {
+          case 'edit': openEditor(taskId); break;
+          case 'move-left': moveRelative(taskId, -1); break;
+          case 'move-right': moveRelative(taskId, 1); break;
+          case 'delete': deleteTask(taskId); break;
+        }
+      });
+
+      elements.board.addEventListener('dblclick', event => {
+        const card = event.target.closest('.task-card');
+        if (card && !event.target.closest('button')) openEditor(card.dataset.taskId);
+      });
+
+      elements.board.addEventListener('keydown', event => {
+        if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.task-card')) {
+          if (event.target === document.activeElement && !event.target.contains(event.target)) return;
+          event.preventDefault();
+          openEditor(event.target.dataset.taskId);
+        }
+      });
+
+      elements.board.addEventListener('dragstart', event => {
+        const card = event.target.closest('.task-card');
+        if (!card) return;
+        draggedTaskId = card.dataset.taskId;
+        card.classList.add('dragging');
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', draggedTaskId);
+        }
+      });
+
+      elements.board.addEventListener('dragend', event => {
+        const card = event.target.closest('.task-card');
+        if (card) card.classList.remove('dragging');
+        $$('.column', elements.board).forEach(column => column.classList.remove('drag-over'));
+        draggedTaskId = null;
+      });
+
+      $$('.column', elements.board).forEach(column => {
+        column.addEventListener('dragover', event => {
+          if (!draggedTaskId) return;
+          event.preventDefault();
+          if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+          column.classList.add('drag-over');
+        });
+        column.addEventListener('dragleave', event => {
+          if (!column.contains(event.relatedTarget)) column.classList.remove('drag-over');
+        });
+        column.addEventListener('drop', event => {
+          event.preventDefault();
+          column.classList.remove('drag-over');
+          const id = draggedTaskId || (event.dataTransfer && event.dataTransfer.getData('text/plain'));
+          if (id) moveTask(id, column.dataset.status);
+        });
+      });
+
+      $$('.tab-button').forEach(tab => tab.addEventListener('click', () => {
+        activeMobileTab = tab.dataset.tab;
+        render();
+      }));
+
+      elements.editForm.addEventListener('submit', event => {
+        event.preventDefault();
+        const task = tasks.find(item => item.id === editingTaskId);
+        const title = elements.editTitle.value.trim();
+        if (!task || !title) return;
+        task.title = title.slice(0, 500);
+        task.priority = PRIORITIES[elements.editPriority.value] ? elements.editPriority.value : 'normal';
+        task.due = elements.editDue.value || '';
+        task.status = STATUSES.includes(elements.editStatus.value) ? elements.editStatus.value : 'todo';
+        task.updatedAt = Date.now();
+        activeMobileTab = task.status;
+        closeEditor();
+        commit();
+        showToast('Изменения сохранены', false);
+      });
+      elements.closeEditDialog.addEventListener('click', closeEditor);
+      elements.cancelEdit.addEventListener('click', closeEditor);
+      elements.editDialog.addEventListener('click', event => {
+        if (event.target === elements.editDialog) closeEditor();
+      });
+
+      elements.undoButton.addEventListener('click', undoDelete);
+      elements.clearDoneButton.addEventListener('click', clearCompleted);
+      elements.clearDoneMenuButton.addEventListener('click', clearCompleted);
+      elements.exportButton.addEventListener('click', exportJSON);
+      elements.importButton.addEventListener('click', () => elements.importFile.click());
+      elements.importFile.addEventListener('change', event => importJSON(event.target.files && event.target.files[0]));
+
+      elements.settingsToggle.addEventListener('click', event => {
+        event.stopPropagation();
+        const willOpen = elements.settingsMenu.hidden;
+        elements.settingsMenu.hidden = !willOpen;
+        elements.settingsToggle.setAttribute('aria-expanded', String(willOpen));
+      });
+      document.addEventListener('click', event => {
+        if (!event.target.closest('.settings')) {
+          elements.settingsMenu.hidden = true;
+          elements.settingsToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+      elements.settingsMenu.addEventListener('click', event => event.stopPropagation());
+
+      elements.themeToggle.addEventListener('click', () => {
+        setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+      });
+
+      // Быстрый доступ к полю новой задачи: Ctrl/Cmd + K или / вне полей ввода.
+      document.addEventListener('keydown', event => {
+        const isTyping = event.target.matches('input, textarea, select, [contenteditable="true"]');
+        if (!isTyping && ((event.key.toLowerCase() === 'k' && (event.ctrlKey || event.metaKey)) || event.key === '/')) {
+          event.preventDefault();
+          elements.newTitle.focus();
+        }
+        if (event.key === 'Escape' && !elements.editDialog.open) {
+          elements.settingsMenu.hidden = true;
+          elements.settingsToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // Native PWA installation prompt where the browser supports it.
+      window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+      });
+
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        elements.installButton.title = 'Приложение установлено';
+        showToast('Focus Board установлено', false);
+      });
+
+      const isStandalone = () =>
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+
+      elements.installButton.addEventListener('click', async () => {
+        if (isStandalone()) {
+          showToast('Focus Board уже открыто как приложение', false);
+          return;
+        }
+
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          try { await deferredInstallPrompt.userChoice; } catch (_) { /* окно закрыто пользователем */ }
+          deferredInstallPrompt = null;
+          return;
+        }
+
+        if (typeof elements.installDialog.showModal === 'function') {
+          elements.installDialog.showModal();
+        } else {
+          window.alert('Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».');
+        }
+      });
+
+      elements.closeInstallDialog.addEventListener('click', () => {
+        if (elements.installDialog.open) elements.installDialog.close();
+      });
+      elements.closeInstallDialogButton.addEventListener('click', () => {
+        if (elements.installDialog.open) elements.installDialog.close();
+      });
+      elements.installDialog.addEventListener('click', event => {
+        if (event.target === elements.installDialog) elements.installDialog.close();
+      });
+
+      // Offline support requires HTTPS; GitHub Pages provides it automatically.
+      if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js', { scope: './' })
+            .catch(error => console.warn('Не удалось включить офлайн-режим:', error));
+        }, { once: true });
+      }
+
+      initializeTheme();
+      render();
+    })();
+  </script>
+</body>
+</html>
